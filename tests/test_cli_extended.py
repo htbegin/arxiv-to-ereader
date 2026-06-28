@@ -51,6 +51,7 @@ class TestCLIConversion:
         respx.get(f"https://arxiv.org/html/{paper_id}").mock(
             return_value=Response(200, text=SAMPLE_HTML)
         )
+        respx.get(f"https://arxiv.org/src/{paper_id}").mock(return_value=Response(404))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             result = runner.invoke(app, [paper_id, "-o", tmpdir, "--no-images"])
@@ -86,6 +87,7 @@ class TestCLIConversion:
         respx.get(f"https://arxiv.org/html/{paper_id}").mock(
             return_value=Response(200, text=SAMPLE_HTML)
         )
+        respx.get(f"https://arxiv.org/src/{paper_id}").mock(return_value=Response(404))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             result = runner.invoke(app, [url, "-o", tmpdir, "--no-images"])
@@ -105,6 +107,7 @@ class TestCLIBatchConversion:
             respx.get(f"https://arxiv.org/html/{paper_id}").mock(
                 return_value=Response(200, text=SAMPLE_HTML)
             )
+            respx.get(f"https://arxiv.org/src/{paper_id}").mock(return_value=Response(404))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             result = runner.invoke(app, [*papers, "-o", tmpdir, "--no-images", "--use-id"])
@@ -118,6 +121,7 @@ class TestCLIBatchConversion:
         respx.get("https://arxiv.org/html/2402.08954").mock(
             return_value=Response(200, text=SAMPLE_HTML)
         )
+        respx.get("https://arxiv.org/src/2402.08954").mock(return_value=Response(404))
         respx.get("https://arxiv.org/html/0000.00000").mock(return_value=Response(404))
 
         with tempfile.TemporaryDirectory() as tmpdir:

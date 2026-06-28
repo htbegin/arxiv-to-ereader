@@ -19,6 +19,7 @@ from arxiv_to_ereader.fetcher import (
     normalize_arxiv_id,
 )
 from arxiv_to_ereader.parser import parse_paper
+from arxiv_to_ereader.source_refs import fetch_source_references_html
 
 
 def sanitize_filename(title: str, max_length: int = 80) -> str:
@@ -107,6 +108,19 @@ def _output_path(paper_id: str, title: str, output_dir: Path | None, use_id: boo
     return (output_dir / f"{filename}.epub") if output_dir else Path(f"{filename}.epub")
 
 
+def _has_references(references_html: str | None) -> bool:
+    return bool(references_html and "ltx_bibitem" in references_html)
+
+
+def _fill_missing_references(paper_id: str, paper) -> None:
+    if _has_references(paper.references_html):
+        return
+
+    references_html = fetch_source_references_html(paper_id)
+    if references_html:
+        paper.references_html = references_html
+
+
 def _convert_single(
     paper_input: str,
     output_dir: Path | None,
@@ -140,6 +154,7 @@ def _convert_single(
 
         progress.update(task, description=f"Parsing {paper_id}...")
         paper = parse_paper(html, paper_id)
+        _fill_missing_references(paper_id, paper)
 
         progress.update(task, description=f"Writing EPUB for {paper_id}...")
         epub_path = convert_to_epub(
@@ -186,6 +201,7 @@ def _convert_batch(
 
         try:
             paper = parse_paper(result, paper_id)
+            _fill_missing_references(paper_id, paper)
             epub_path = convert_to_epub(
                 paper,
                 output_path=_output_path(paper_id, paper.title, output_dir, use_id),

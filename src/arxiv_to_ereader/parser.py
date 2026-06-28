@@ -516,9 +516,10 @@ def parse_paper(html: str, paper_id: str, base_url: str | None = None) -> Paper:
     """
     soup = BeautifulSoup(html, "lxml")
 
-    # Set base URL from paper ID if not provided
+    # Set base URL from paper ID if not provided. arXiv image paths are often
+    # relative siblings like "2605.03375v1/x1.png", so this must not end in "/".
     if not base_url:
-        base_url = f"https://arxiv.org/html/{paper_id}/"
+        base_url = f"https://arxiv.org/html/{paper_id}"
 
     # Extract figures and images BEFORE sections (since section extraction modifies soup)
     figures = _extract_figures(soup, base_url)
