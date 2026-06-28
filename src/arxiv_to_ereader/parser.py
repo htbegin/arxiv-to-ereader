@@ -87,8 +87,8 @@ def _process_content(soup_fragment: Tag, footnote_counter: list[int]) -> tuple[s
                 tag[k] = v
         return tag
 
-    # 0. Convert algorithm SVGs to HTML blocks
-    # LaTeXML renders algorithms as SVG with foreignobject, which has transform issues in PDF
+    # 0. Convert algorithm SVGs to HTML blocks.
+    # LaTeXML renders algorithms as SVG with foreignobject, which is fragile in e-book readers.
     for svg in soup_fragment.select("svg.ltx_picture"):
         foreignobjects = svg.find_all("foreignobject")
         if not foreignobjects:
@@ -115,7 +115,8 @@ def _process_content(soup_fragment: Tag, footnote_counter: list[int]) -> tuple[s
         # Create algorithm HTML block
         algo_div = new_tag("div", {"class": "algorithm-block"})
         title_div = new_tag("div", {"class": "algorithm-title"})
-        title_div.append(BeautifulSoup(title_html, "lxml").body.contents[0] if BeautifulSoup(title_html, "lxml").body else "")
+        title_soup = BeautifulSoup(title_html, "lxml")
+        title_div.append(title_soup.body.contents[0] if title_soup.body else "")
         algo_div.append(title_div)
 
         body_div = new_tag("div", {"class": "algorithm-body"})

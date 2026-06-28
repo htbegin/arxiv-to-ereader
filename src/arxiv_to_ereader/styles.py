@@ -1,460 +1,205 @@
-"""PDF styles for e-reader screens (browser-based rendering)."""
-
-from arxiv_to_ereader.screen_presets import ScreenPreset
+"""EPUB stylesheet for arXiv HTML content."""
 
 
-def get_pdf_stylesheet(preset: ScreenPreset) -> str:
-    """Generate CSS for PDF output optimized for a specific screen size.
-
-    This stylesheet is designed for browser-based rendering via Playwright,
-    which provides native MathML support.
-
-    Args:
-        preset: Screen preset with dimensions and font settings
-
-    Returns:
-        Complete CSS stylesheet
-    """
-    return f"""
-/* Reset */
-* {{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}}
-
-body {{
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: {preset.base_font_pt}pt;
-    line-height: 1.5;
-    color: #000;
+def get_epub_stylesheet() -> str:
+    """Return CSS suitable for EPUB readers."""
+    return """
+body {
+    font-family: serif;
+    line-height: 1.45;
+    color: #111;
     background: #fff;
-    text-align: justify;
-    hyphens: auto;
-    -webkit-hyphens: auto;
-}}
+}
 
-/* Headings */
-h1, h2, h3, h4, h5, h6 {{
-    font-family: Helvetica, Arial, sans-serif;
-    font-weight: bold;
-    line-height: 1.3;
-    text-align: left;
+h1, h2, h3, h4, h5, h6 {
+    font-family: sans-serif;
+    line-height: 1.25;
     page-break-after: avoid;
-}}
+    break-after: avoid;
+}
 
-h1 {{
-    font-size: {preset.base_font_pt * 1.5}pt;
-    margin: 0 0 12pt 0;
-    page-break-before: always;
-}}
+p {
+    margin: 0 0 0.75em 0;
+}
 
-h1:first-of-type {{
-    page-break-before: avoid;
-}}
+a {
+    color: #0645ad;
+}
 
-h2 {{
-    font-size: {preset.base_font_pt * 1.3}pt;
-    margin: 18pt 0 8pt 0;
-}}
+.cover {
+    text-align: center;
+    margin: 2em 0 3em;
+}
 
-h3 {{
-    font-size: {preset.base_font_pt * 1.1}pt;
-    margin: 14pt 0 6pt 0;
-}}
+.cover h1 {
+    font-size: 1.7em;
+}
 
-h4, h5, h6 {{
-    font-size: {preset.base_font_pt}pt;
-    margin: 12pt 0 4pt 0;
-}}
+.authors {
+    font-style: italic;
+}
 
-/* Paragraphs */
-p {{
-    margin-bottom: 8pt;
-    text-indent: 0;
-    orphans: 2;
-    widows: 2;
-}}
+.paper-id,
+.date {
+    color: #555;
+}
 
-p + p {{
-    text-indent: 1.5em;
-    margin-top: 0;
-}}
+.abstract {
+    margin: 1.5em 0;
+    padding: 0.75em;
+    border-left: 0.25em solid #777;
+    background: #f7f7f7;
+}
 
-/* Links */
-a {{
-    color: #0066cc;
-    text-decoration: underline;
-}}
-
-/* Images */
-img {{
+img {
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 12pt auto;
-}}
+    margin: 1em auto;
+}
 
-figure {{
-    margin: 16pt 0;
+figure {
+    margin: 1.25em 0;
     text-align: center;
     page-break-inside: avoid;
-}}
+    break-inside: avoid;
+}
 
-figcaption, .ltx_caption {{
-    font-size: {preset.base_font_pt * 0.9}pt;
+figcaption,
+.ltx_caption {
+    font-size: 0.9em;
     font-style: italic;
-    margin-top: 6pt;
-    text-align: center;
-}}
+    margin-top: 0.5em;
+}
 
-/* Tables */
-table {{
+table {
     width: 100%;
     border-collapse: collapse;
-    margin: 12pt 0;
-    font-size: {preset.base_font_pt * 0.9}pt;
-    page-break-inside: avoid;
-}}
+    margin: 1em 0;
+}
 
-th, td {{
-    border: 0.5pt solid #666;
-    padding: 4pt 6pt;
-    text-align: left;
-}}
+th,
+td {
+    border: 1px solid #777;
+    padding: 0.25em 0.4em;
+}
 
-th {{
-    background: #f0f0f0;
-    font-weight: bold;
-}}
+.table-wrapper {
+    overflow-x: auto;
+    margin: 1em 0;
+}
 
-/* Code */
-pre, code {{
-    font-family: "Courier New", Courier, monospace;
-    font-size: {preset.base_font_pt * 0.85}pt;
-    background: #f5f5f5;
-}}
-
-pre {{
-    padding: 8pt;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    page-break-inside: avoid;
-}}
-
-code {{
-    padding: 1pt 3pt;
-}}
-
-/* Lists */
-ul, ol {{
-    margin: 8pt 0;
-    padding-left: 1.5em;
-}}
-
-li {{
-    margin-bottom: 4pt;
-}}
-
-/* Cover page */
-.cover {{
-    text-align: center;
-    padding: 20pt 10pt;
-    page-break-after: always;
-}}
-
-.cover h1 {{
-    page-break-before: avoid;
-    margin-bottom: 16pt;
-    font-size: {preset.base_font_pt * 1.6}pt;
-}}
-
-.cover .authors {{
-    font-size: {preset.base_font_pt * 1.1}pt;
-    font-style: italic;
-    margin-bottom: 24pt;
-}}
-
-.cover .paper-id {{
-    font-size: {preset.base_font_pt * 0.9}pt;
-    color: #666;
-}}
-
-.cover .date {{
-    font-size: {preset.base_font_pt * 0.9}pt;
-    color: #666;
-    margin-top: 8pt;
-}}
-
-/* Abstract */
-.abstract {{
-    margin: 16pt 0;
-    padding: 12pt;
-    background: #f8f8f8;
-    border-left: 3pt solid #666;
-}}
-
-.abstract-title {{
-    font-weight: bold;
-    margin-bottom: 8pt;
-}}
-
-/* Theorem-like environments */
-.theorem-like, .ltx_theorem, .ltx_lemma, .ltx_definition,
-.ltx_corollary, .ltx_proposition, .ltx_remark, .ltx_example {{
-    margin: 14pt 0;
-    padding: 10pt;
-    background: #f9f9f9;
-    border: 0.5pt solid #ddd;
-    border-left: 3pt solid #666;
-    page-break-inside: avoid;
-}}
-
-.ltx_proof {{
-    margin: 10pt 0;
-    padding: 8pt 10pt;
-    border-left: 2pt solid #999;
-}}
-
-/* MathML - native browser rendering */
-math {{
-    font-size: 1em;
-}}
-
-math[display="block"] {{
-    display: block;
-    text-align: center;
-    margin: 12pt 0;
-}}
-
-/* Equation tables */
-table.ltx_equation, table.ltx_eqn_table {{
-    border: none;
-    margin: 12pt 0;
-    width: 100%;
-}}
-
-table.ltx_equation td,
-table.ltx_eqn_table td {{
-    border: none;
-    padding: 4pt 0;
-    vertical-align: middle;
-}}
-
-.ltx_eqn_cell {{
-    text-align: center;
-}}
-
-.ltx_eqn_eqno {{
-    text-align: right;
-    font-size: {preset.base_font_pt * 0.9}pt;
-    color: #444;
-    width: 10%;
-}}
-
-/* Citations */
-.citation, .ltx_cite {{
-    font-style: normal;
-}}
-
-/* References */
-.ltx_bibliography, .references {{
-    margin-top: 20pt;
-}}
-
-.ltx_bibitem {{
-    margin-bottom: 8pt;
-    padding-left: 2em;
-    text-indent: -2em;
-    font-size: {preset.base_font_pt * 0.9}pt;
-}}
-
-/* Footnotes section */
-.footnotes-section {{
-    margin-top: 20pt;
-    padding-top: 10pt;
-    border-top: 0.5pt solid #ccc;
-    font-size: {preset.base_font_pt * 0.9}pt;
-}}
-
-.footnotes-section h2 {{
-    font-size: {preset.base_font_pt * 1.1}pt;
-    margin-bottom: 10pt;
-}}
-
-/* Footnote references */
-.footnote-ref {{
-    text-decoration: none;
-    color: #0066cc;
-}}
-
-.footnote-ref sup {{
-    font-size: 0.75em;
-}}
-
-/* LaTeXML specific */
-.ltx_para {{
-    margin-bottom: 8pt;
-}}
-
-.ltx_item {{
-    margin-bottom: 4pt;
-}}
-
-/* Code blocks */
-.code-block, .ltx_listing, .ltx_verbatim {{
-    background: #f5f5f5;
-    padding: 8pt;
-    margin: 10pt 0;
-    font-family: "Courier New", Courier, monospace;
-    font-size: {preset.base_font_pt * 0.85}pt;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    border: 0.5pt solid #ddd;
-}}
-
-/* Blockquotes */
-blockquote {{
-    margin: 10pt 15pt;
-    padding-left: 10pt;
-    border-left: 2pt solid #ccc;
-    font-style: italic;
-}}
-
-/* Section breaks */
-.ltx_section {{
-    page-break-before: auto;
-}}
-
-/* Table wrapper */
-.table-wrapper {{
-    margin: 12pt 0;
-}}
-
-/* LaTeXML span-based tables */
-.ltx_tabular {{
+.ltx_tabular {
     display: table;
     border-collapse: collapse;
-    margin: 8pt auto;
-    font-size: {preset.base_font_pt * 0.85}pt;
-}}
+    margin: 0.75em auto;
+}
 
-.ltx_tr {{
+.ltx_tr {
     display: table-row;
-}}
+}
 
-.ltx_td, .ltx_th {{
+.ltx_td,
+.ltx_th {
     display: table-cell;
-    padding: 3pt 5pt;
-    text-align: left;
+    padding: 0.25em 0.4em;
     vertical-align: middle;
-}}
+}
 
-/* LaTeXML table borders */
-.ltx_border_t {{ border-top: 0.5pt solid #444; }}
-.ltx_border_b {{ border-bottom: 0.5pt solid #444; }}
-.ltx_border_l {{ border-left: 0.5pt solid #444; }}
-.ltx_border_r {{ border-right: 0.5pt solid #444; }}
-.ltx_border_tt {{ border-top: 1pt solid #000; }}
-.ltx_border_bb {{ border-bottom: 1pt solid #000; }}
+.ltx_border_t { border-top: 1px solid #444; }
+.ltx_border_b { border-bottom: 1px solid #444; }
+.ltx_border_l { border-left: 1px solid #444; }
+.ltx_border_r { border-right: 1px solid #444; }
+.ltx_border_tt { border-top: 2px solid #000; }
+.ltx_border_bb { border-bottom: 2px solid #000; }
 
-/* LaTeXML table figure */
-.ltx_table {{
-    margin: 12pt auto;
-    page-break-inside: avoid;
-}}
+math {
+    font-size: 1em;
+}
 
-/* Transform containers - reset transforms for e-reader readability */
-.ltx_transformed_outer {{
+math[display="block"],
+.math-block {
     display: block;
-    margin: 8pt auto;
-    max-width: 100%;
-    overflow-x: auto;
-    /* Reset fixed dimensions from LaTeXML */
-    width: auto !important;
-    height: auto !important;
-    vertical-align: baseline !important;
-}}
+    text-align: center;
+    margin: 1em 0;
+}
 
-.ltx_transformed_inner {{
-    display: block;
-    /* Reset scaling transforms - we want full-size content on e-readers */
-    transform: none !important;
-}}
+table.ltx_equation,
+table.ltx_eqn_table {
+    border: none;
+}
 
-/* Tables should be allowed to overflow with scrolling if needed */
-.ltx_table .ltx_transformed_outer {{
-    overflow-x: auto;
-}}
+table.ltx_equation td,
+table.ltx_eqn_table td {
+    border: none;
+}
 
-/* SVG figures (algorithms, diagrams) */
-svg.ltx_picture {{
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 10pt auto;
-}}
+.theorem-like,
+.ltx_theorem,
+.ltx_lemma,
+.ltx_definition,
+.ltx_corollary,
+.ltx_proposition,
+.ltx_remark,
+.ltx_example {
+    margin: 1em 0;
+    padding: 0.75em;
+    border-left: 0.25em solid #777;
+    background: #f7f7f7;
+}
 
-/* Foreign objects in SVG need proper sizing */
-svg foreignobject {{
-    overflow: visible;
-}}
+.ltx_proof {
+    margin: 0.75em 0;
+    padding-left: 0.75em;
+    border-left: 0.15em solid #999;
+}
 
-.ltx_foreignobject_container {{
-    display: block;
-}}
-
-/* Algorithm boxes - converted from SVG to HTML */
-.algorithm-block {{
-    margin: 14pt 0;
-    padding: 10pt;
+pre,
+code,
+.code-block,
+.ltx_listing,
+.ltx_verbatim {
+    font-family: monospace;
     background: #f5f5f5;
-    border: 1pt solid #999;
-    border-radius: 4pt;
-    page-break-inside: avoid;
-}}
+}
 
-.algorithm-title {{
+pre,
+.code-block,
+.ltx_listing,
+.ltx_verbatim {
+    padding: 0.75em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.footnotes-section {
+    border-top: 1px solid #ccc;
+    margin-top: 2em;
+    padding-top: 1em;
+    font-size: 0.9em;
+}
+
+.footnote-ref {
+    text-decoration: none;
+}
+
+.ltx_bibitem {
+    margin-bottom: 0.75em;
+    padding-left: 2em;
+    text-indent: -2em;
+}
+
+.algorithm-block {
+    margin: 1em 0;
+    padding: 0.75em;
+    border: 1px solid #999;
+    background: #f5f5f5;
+}
+
+.algorithm-title {
     font-weight: bold;
-    font-size: {preset.base_font_pt * 1.05}pt;
-    margin-bottom: 8pt;
-    padding-bottom: 6pt;
-    border-bottom: 0.5pt solid #ccc;
-}}
-
-.algorithm-body {{
-    font-size: {preset.base_font_pt * 0.95}pt;
-    line-height: 1.6;
-}}
-
-.algorithm-body .ltx_p {{
-    margin: 4pt 0;
-    text-indent: 0;
-}}
-
-/* Fallback for SVG algorithms that weren't converted */
-.ltx_figure svg {{
-    max-width: 100%;
-    height: auto;
-}}
-
-/* Print-specific */
-@media print {{
-    body {{
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }}
-
-    .cover {{
-        page-break-after: always;
-    }}
-
-    h1, h2, h3, h4, h5, h6 {{
-        page-break-after: avoid;
-    }}
-
-    figure, table, pre {{
-        page-break-inside: avoid;
-    }}
-}}
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 0.5em;
+    padding-bottom: 0.4em;
+}
 """

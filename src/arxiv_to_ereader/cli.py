@@ -1,4 +1,4 @@
-"""Command-line interface for arxiv-ereader."""
+"""Command-line interface for arxiv2epub."""
 
 import asyncio
 import re
@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from arxiv_to_ereader import __version__
-from arxiv_to_ereader.converter import convert_to_pdf
+from arxiv_to_ereader.epub_converter import convert_to_epub
 from arxiv_to_ereader.fetcher import (
     ArxivFetchError,
     ArxivHTMLNotAvailable,
@@ -19,19 +19,10 @@ from arxiv_to_ereader.fetcher import (
     normalize_arxiv_id,
 )
 from arxiv_to_ereader.parser import parse_paper
-from arxiv_to_ereader.screen_presets import SCREEN_PRESETS
 
 
 def sanitize_filename(title: str, max_length: int = 80) -> str:
-    """Convert a paper title to a safe filename.
-
-    Args:
-        title: The paper title
-        max_length: Maximum length for the filename (default 80)
-
-    Returns:
-        A sanitized filename-safe string (Linux/macOS/Windows compatible)
-    """
+    """Convert a paper title to a safe filename."""
     filename = title.replace(":", "-")
     filename = filename.replace("/", "-").replace("\\", "-")
     filename = re.sub(r'[<>"|?*\x00-\x1f]', "", filename)
@@ -46,8 +37,8 @@ def sanitize_filename(title: str, max_length: int = 80) -> str:
 
 
 app = typer.Typer(
-    name="arxiv-ereader",
-    help="Convert arXiv HTML papers to PDF optimized for e-readers.",
+    name="arxiv2epub",
+    help="Convert arXiv HTML papers to EPUB.",
     add_completion=False,
 )
 console = Console()
@@ -56,16 +47,7 @@ console = Console()
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        console.print(f"arxiv-ereader version {__version__}")
-        raise typer.Exit()
-
-
-def list_screens_callback(value: bool) -> None:
-    """List available screen presets and exit."""
-    if value:
-        console.print("[bold]Available screen presets:[/bold]")
-        for name, preset in SCREEN_PRESETS.items():
-            console.print(f"  [cyan]{name}[/cyan]: {preset.description} ({preset.width_mm}x{preset.height_mm}mm)")
+        console.print(f"arxiv2epub version {__version__}")
         raise typer.Exit()
 
 
@@ -74,7 +56,7 @@ def convert(
     papers: Annotated[
         list[str],
         typer.Argument(
-            help="arXiv paper IDs or URLs (e.g., 2402.08954 or https://arxiv.org/abs/2402.08954)"
+            help="arXiv paper IDs or URLs (for example: 2402.08954 or https://arxiv.org/abs/2402.08954)"
         ),
     ],
     output: Annotated[
@@ -82,36 +64,14 @@ def convert(
         typer.Option(
             "--output",
             "-o",
-            help="Output directory for PDF files",
-        ),
-    ] = None,
-    screen: Annotated[
-        str,
-        typer.Option(
-            "--screen",
-            "-s",
-            help="E-reader screen preset (use --list-screens to see options)",
-        ),
-    ] = "kindle-paperwhite",
-    width: Annotated[
-        float | None,
-        typer.Option(
-            "--width",
-            help="Custom page width in mm (requires --height)",
-        ),
-    ] = None,
-    height: Annotated[
-        float | None,
-        typer.Option(
-            "--height",
-            help="Custom page height in mm (requires --width)",
+            help="Output directory for EPUB files",
         ),
     ] = None,
     no_images: Annotated[
         bool,
         typer.Option(
             "--no-images",
-            help="Skip downloading images (faster, smaller files)",
+            help="Do not download and package paper images",
         ),
     ] = False,
     use_id: Annotated[
@@ -121,15 +81,6 @@ def convert(
             help="Use arXiv ID for filename instead of paper title",
         ),
     ] = False,
-    list_screens: Annotated[
-        bool | None,
-        typer.Option(
-            "--list-screens",
-            callback=list_screens_callback,
-            is_eager=True,
-            help="List available screen presets and exit",
-        ),
-    ] = None,
     version: Annotated[
         bool | None,
         typer.Option(
@@ -141,53 +92,24 @@ def convert(
         ),
     ] = None,
 ) -> None:
-    """Convert arXiv papers to PDF format optimized for e-readers.
-
-    Examples:
-
-        arxiv-ereader 2402.08954
-
-        arxiv-ereader 2402.08954 2401.12345 -o ~/papers/
-
-        arxiv-ereader https://arxiv.org/abs/2402.08954 --screen kindle-scribe
-
-        arxiv-ereader 2402.08954 --width 150 --height 200
-    """
-    # Validate screen preset or custom dimensions
-    if (width is not None) != (height is not None):
-        console.print("[red]Error:[/red] Both --width and --height must be specified together")
-        raise typer.Exit(1)
-
-    if width is None and screen not in SCREEN_PRESETS:
-        available = ", ".join(SCREEN_PRESETS.keys())
-        console.print(f"[red]Error:[/red] Unknown screen preset '{screen}'.")
-        console.print(f"Available presets: {available}")
-        console.print("Use --list-screens to see details, or specify --width and --height for custom size.")
-        raise typer.Exit(1)
-
-    # Create output directory if specified
+    """Convert arXiv papers to EPUB 3."""
     if output:
         output.mkdir(parents=True, exist_ok=True)
 
-    # Process single paper or batch
     if len(papers) == 1:
-        _convert_single(
-            papers[0], output, screen, width, height,
-            not no_images, use_id
-        )
+        _convert_single(papers[0], output, not no_images, use_id)
     else:
-        _convert_batch(
-            papers, output, screen, width, height,
-            not no_images, use_id
-        )
+        _convert_batch(papers, output, not no_images, use_id)
+
+
+def _output_path(paper_id: str, title: str, output_dir: Path | None, use_id: bool) -> Path:
+    filename = paper_id.replace("/", "_") if use_id else sanitize_filename(title)
+    return (output_dir / f"{filename}.epub") if output_dir else Path(f"{filename}.epub")
 
 
 def _convert_single(
     paper_input: str,
     output_dir: Path | None,
-    screen: str,
-    width: float | None,
-    height: float | None,
     download_images: bool,
     use_id: bool,
 ) -> None:
@@ -197,7 +119,6 @@ def _convert_single(
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
-        # Normalize ID
         try:
             paper_id = normalize_arxiv_id(paper_input)
         except ValueError as e:
@@ -206,7 +127,6 @@ def _convert_single(
 
         task = progress.add_task(f"Fetching {paper_id}...", total=None)
 
-        # Fetch HTML
         try:
             _, html = fetch_paper(paper_input)
         except ArxivHTMLNotAvailable as e:
@@ -219,36 +139,18 @@ def _convert_single(
             raise typer.Exit(1)
 
         progress.update(task, description=f"Parsing {paper_id}...")
-
-        # Parse HTML
         paper = parse_paper(html, paper_id)
 
-        progress.update(task, description=f"Converting {paper_id} to PDF...")
-
-        # Determine output path
-        if use_id:
-            filename = paper_id.replace("/", "_")
-        else:
-            filename = sanitize_filename(paper.title)
-
-        if output_dir:
-            output_path = output_dir / f"{filename}.pdf"
-        else:
-            output_path = Path(f"{filename}.pdf")
-
-        # Convert to PDF
-        pdf_path = convert_to_pdf(
+        progress.update(task, description=f"Writing EPUB for {paper_id}...")
+        epub_path = convert_to_epub(
             paper,
-            output_path=output_path,
-            screen_preset=screen,
-            custom_width_mm=width,
-            custom_height_mm=height,
+            output_path=_output_path(paper_id, paper.title, output_dir, use_id),
             download_images=download_images,
         )
 
         progress.stop()
 
-    console.print(f"[green]Success![/green] Created: {pdf_path}")
+    console.print(f"[green]Success![/green] Created: {epub_path}")
     console.print(f"  Title: {paper.title}")
     console.print(f"  Authors: {', '.join(paper.authors)}")
 
@@ -256,26 +158,21 @@ def _convert_single(
 def _convert_batch(
     paper_inputs: list[str],
     output_dir: Path | None,
-    screen: str,
-    width: float | None,
-    height: float | None,
     download_images: bool,
     use_id: bool,
 ) -> None:
     """Convert multiple papers."""
-    console.print(f"Converting {len(paper_inputs)} papers to PDF...")
+    console.print(f"Converting {len(paper_inputs)} papers to EPUB...")
 
-    # Fetch all papers concurrently
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
-        task = progress.add_task("Fetching papers...", total=None)
+        progress.add_task("Fetching papers...", total=None)
         results = asyncio.run(fetch_papers_batch(paper_inputs))
         progress.stop()
 
-    # Process results
     success_count = 0
     error_count = 0
 
@@ -285,42 +182,21 @@ def _convert_batch(
             error_count += 1
             continue
 
-        html = result
         console.print(f"[dim]Processing {paper_id}...[/dim]")
 
         try:
-            # Parse HTML
-            paper = parse_paper(html, paper_id)
-
-            # Determine output path
-            if use_id:
-                filename = paper_id.replace("/", "_")
-            else:
-                filename = sanitize_filename(paper.title)
-
-            if output_dir:
-                output_path = output_dir / f"{filename}.pdf"
-            else:
-                output_path = Path(f"{filename}.pdf")
-
-            # Convert to PDF
-            pdf_path = convert_to_pdf(
+            paper = parse_paper(result, paper_id)
+            epub_path = convert_to_epub(
                 paper,
-                output_path=output_path,
-                screen_preset=screen,
-                custom_width_mm=width,
-                custom_height_mm=height,
+                output_path=_output_path(paper_id, paper.title, output_dir, use_id),
                 download_images=download_images,
             )
-
-            console.print(f"[green]Created:[/green] {pdf_path}")
+            console.print(f"[green]Created:[/green] {epub_path}")
             success_count += 1
-
         except Exception as e:
             console.print(f"[red]Error[/red] converting {paper_id}: {e}")
             error_count += 1
 
-    # Summary
     console.print()
     console.print(f"[bold]Summary:[/bold] {success_count} succeeded, {error_count} failed")
 
