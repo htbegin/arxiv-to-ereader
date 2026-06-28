@@ -44,6 +44,31 @@ class TestSourceReferences:
         assert html is not None
         assert "Computing Engines" in html
         assert "Ada Lovelace; Alan Turing" in html
+        assert 'id="bib-key"' in html
+
+    @respx.mock
+    def test_fetches_bbl_references_with_ids(self) -> None:
+        archive = _tar_gz(
+            {
+                "paper.bbl": r"""
+                \begin{thebibliography}{1}
+                \bibitem{flashgen}
+                Ada Lovelace. Fast KV cache reuse. 2025.
+                \bibitem{jiang2024kvpr}
+                Alan Turing. KV prediction. 2024.
+                \end{thebibliography}
+                """
+            }
+        )
+        respx.get("https://arxiv.org/src/2605.03375").mock(
+            return_value=Response(200, content=archive)
+        )
+
+        html = fetch_source_references_html("2605.03375")
+
+        assert html is not None
+        assert 'id="bib-flashgen"' in html
+        assert 'id="bib-jiang2024kvpr"' in html
 
     @respx.mock
     def test_returns_none_on_missing_source(self) -> None:

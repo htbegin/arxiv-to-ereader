@@ -69,6 +69,30 @@ class TestConvertToEpub:
                 section_one = epub.read("EPUB/section-001-S1.xhtml").decode()
                 assert 'href="section-002-S2.xhtml#S2"' in section_one
 
+    def test_rewrites_missing_citation_spans_to_reference_links(self) -> None:
+        paper = sample_paper()
+        paper.sections[0].content = (
+            '<p>Reuse is slow '
+            '(<span class="ltx_ref ltx_missing_citation ltx_ref_self">flashgen</span>).</p>'
+        )
+        paper.references_html = (
+            '<section id="bib"><ul>'
+            '<li class="ltx_bibitem" id="bib-flashgen">FlashGen reference.</li>'
+            "</ul></section>"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = convert_to_epub(
+                paper,
+                Path(tmpdir) / "paper.epub",
+                download_images=False,
+            )
+
+            with zipfile.ZipFile(path) as epub:
+                section_one = epub.read("EPUB/section-001-S1.xhtml").decode()
+                assert 'href="references.xhtml#bib-flashgen"' in section_one
+                assert '>flashgen</a>' in section_one
+
     @respx.mock
     def test_packages_images(self) -> None:
         respx.get("https://arxiv.org/html/2402.08954/figure1.png").mock(

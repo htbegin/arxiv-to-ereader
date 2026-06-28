@@ -10,6 +10,12 @@ from html import escape
 import httpx
 
 
+def citation_target_id(key: str) -> str:
+    """Return the fallback bibliography target ID for a citation key."""
+    safe = re.sub(r"[^A-Za-z0-9_.-]+", "-", key).strip("-._")
+    return f"bib-{safe or 'ref'}"
+
+
 def _strip_tex(value: str) -> str:
     value = value.replace("\n", " ")
     value = re.sub(r"\\[a-zA-Z]+\*?(?:\[[^\]]*\])?(?:\{([^{}]*)\})?", r"\1", value)
@@ -59,7 +65,8 @@ def _parse_bib_fields(entry: str) -> dict[str, str]:
     if comma == -1:
         return {}
 
-    fields: dict[str, str] = {}
+    citation_key = body[:comma].strip()
+    fields: dict[str, str] = {"citation_key": citation_key}
     pos = comma + 1
     while pos < len(body):
         match = re.search(r"([A-Za-z][A-Za-z0-9_-]*)\s*=", body[pos:])
@@ -136,9 +143,11 @@ def _format_bib_entry(fields: dict[str, str]) -> str | None:
 def _bib_to_html(text: str) -> str | None:
     items = []
     for entry in _split_bib_entries(text):
-        formatted = _format_bib_entry(_parse_bib_fields(entry))
+        fields = _parse_bib_fields(entry)
+        formatted = _format_bib_entry(fields)
         if formatted:
-            items.append(f'<li class="ltx_bibitem">{escape(formatted)}</li>')
+            item_id = citation_target_id(fields.get("citation_key", ""))
+            items.append(f'<li class="ltx_bibitem" id="{escape(item_id)}">{escape(formatted)}</li>')
 
     if not items:
         return None
@@ -152,13 +161,16 @@ def _bib_to_html(text: str) -> str | None:
 
 
 def _bbl_to_html(text: str) -> str | None:
-    bibitems = re.split(r"\\bibitem(?:\[[^\]]*\])?\{[^}]+\}", text)
     items = []
-    for item in bibitems[1:]:
-        item = item.split("\\end{thebibliography}", 1)[0]
+    pattern = re.compile(r"\\bibitem(?:\[[^\]]*\])?\{([^}]+)\}")
+    matches = list(pattern.finditer(text))
+    for index, match in enumerate(matches):
+        item_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        item = text[match.end() : item_end].split("\\end{thebibliography}", 1)[0]
         item = _strip_tex(item)
         if item:
-            items.append(f'<li class="ltx_bibitem">{escape(item)}</li>')
+            item_id = citation_target_id(match.group(1).strip())
+            items.append(f'<li class="ltx_bibitem" id="{escape(item_id)}">{escape(item)}</li>')
 
     if not items:
         return None

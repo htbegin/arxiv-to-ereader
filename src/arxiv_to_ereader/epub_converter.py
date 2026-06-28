@@ -16,6 +16,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from arxiv_to_ereader.parser import Paper
+from arxiv_to_ereader.source_refs import citation_target_id
 from arxiv_to_ereader.styles import get_epub_stylesheet
 
 
@@ -144,6 +145,25 @@ def _rewrite_fragment(
             continue
         elif drop_unresolved_images:
             img.decompose()
+
+    for citation in root.select(".ltx_missing_citation"):
+        if citation.find_parent("a"):
+            continue
+
+        key = citation.get_text(strip=True)
+        target_id = citation_target_id(key)
+        target_file = href_map.get(target_id)
+        if not key or not target_file:
+            continue
+
+        link = soup.new_tag(
+            "a",
+            href=f"#{target_id}" if target_file == current_file else f"{target_file}#{target_id}",
+        )
+        classes = citation.get("class", [])
+        link["class"] = [*classes, "citation-link"]
+        link.string = key
+        citation.replace_with(link)
 
     for link in root.find_all("a", href=True):
         href = link["href"]
