@@ -96,6 +96,28 @@ class TestParsePaper:
             == "https://arxiv.org/html/2605.03375v1/x1.png"
         )
 
+    def test_base_tag_image_url(self) -> None:
+        """Test arXiv HTML base tags resolve plain image filenames."""
+        html = """
+        <html>
+        <head><base href="/html/2601.07372v1/"/></head>
+        <body>
+            <article>
+                <section class="ltx_section" id="S1">
+                    <h2 class="ltx_title">Intro</h2>
+                    <figure class="ltx_figure" id="S1.F1">
+                        <img src="x1.png" alt="Figure"/>
+                    </figure>
+                </section>
+            </article>
+        </body>
+        </html>
+        """
+        paper = parse_paper(html, "2601.07372")
+
+        assert paper.base_url == "https://arxiv.org/html/2601.07372v1/"
+        assert paper.all_images["x1.png"] == "https://arxiv.org/html/2601.07372v1/x1.png"
+
     def test_minimal_html(self, minimal_html: str) -> None:
         """Test parsing minimal HTML without LaTeXML structure."""
         paper = parse_paper(minimal_html, "0000.00000")
